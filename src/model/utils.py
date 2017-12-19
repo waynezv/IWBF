@@ -42,7 +42,7 @@ def cal_test_err(loss_ds, yps, y, attri_dict):
     test_errs = OrderedDict()
     for i, k in enumerate(attri_dict):
         if attri_dict[k]['discrete'] is True:  # discrete classes
-            test_errs[k] = torch.nn.functional.softmax(yps[k]).topk(1, dim=1)[1].squeeze().eq(y[:, i].long()).sum().data[0] / float(y.size(0))
+            test_errs[k] = 1. - torch.nn.functional.softmax(yps[k]).topk(1, dim=1)[1].squeeze().eq(y[:, i].long()).sum().data[0] / float(y.size(0))
         else:  # continuous values
             test_errs[k] = loss_ds[k].data[0]
 
