@@ -3,9 +3,50 @@ import sys
 import time
 import os
 import shutil
+from collections import OrderedDict
 import torch
 import numpy as np
 from colorama import Fore
+import pdb
+
+
+def loss_func(yps, y, attri_dict):
+    '''
+    Compute losses w.r.t. attri_dict.
+
+    :yps: OrderedDict, {label name: prediction (without softmax) [TorchTensor]}
+    :y: TorchTensor, label
+    :attri_dict: OrderedDict, {label name: {discrete: True or False, dimension: number of classes [int]}}
+    <- losses: OrderedDict, {label name: loss}
+    '''
+    losses = OrderedDict()
+    for i, k in enumerate(attri_dict):
+        if attri_dict[k]['discrete'] is True:  # discrete classes
+            losses[k] = torch.nn.functional.cross_entropy(yps[k], y[:, i].long())
+        else:  # continuous values
+            losses[k] = torch.nn.functional.mse_loss(yps[k], y[:, i])
+
+    return losses
+
+
+def cal_test_err(loss_ds, yps, y, attri_dict):
+    '''
+    Compute test errors w.r.t. attri_dict.
+
+    :loss_ds: OrderedDict, {label name: loss [TorchTensor]}
+    :yps: OrderedDict, {label name: prediction (without softmax) [TorchTensor]}
+    :y: TorchTensor, label
+    :attri_dict: OrderedDict, {label name: {discrete: True or False, dimension: number of classes [int]}}
+    <- test_errs: OrderedDict, {label name: test error [float]]}
+    '''
+    test_errs = OrderedDict()
+    for i, k in enumerate(attri_dict):
+        if attri_dict[k]['discrete'] is True:  # discrete classes
+            test_errs[k] = torch.nn.functional.softmax(yps[k]).topk(1, dim=1)[1].squeeze().eq(y[:, i].long()).sum().data[0] / float(y.size(0))
+        else:  # continuous values
+            test_errs[k] = loss_ds[k].data[0]
+
+    return test_errs
 
 
 class ScoreMeter():

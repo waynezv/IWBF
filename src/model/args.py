@@ -5,6 +5,8 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', help='timit | tidigits | to be added')
+parser.add_argument('--numTrain', type=int, default=None, help='number of train samples to load. default=None')
+parser.add_argument('--numTest', type=int, default=None, help='number of test samples to load. default=None')
 
 parser.add_argument('--batchSize', type=int, default=64, help='input batch size. default=64')
 parser.add_argument('--nepoch', type=int, default=30, help='number of epochs to train for. default=30')

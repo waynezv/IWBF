@@ -51,13 +51,14 @@ def build_info_dict(raw_info_fn):
     return info_dict
 
 
-def dataloader(featdir, trainlist, testlist, timitinfo, tasks, batch=False, batch_size=64, shuffle=True, num_workers=32):
+def dataloader(featdir, trainlist, testlist, timitinfo, tasks, num_train=None, num_test=None, batch=False, batch_size=64, shuffle=True, num_workers=32):
     '''
     Dataloader for TIMIT.
     '''
     info_dict = build_info_dict(timitinfo)
-    trnls = [l.rstrip('\n') for l in open(trainlist)]
-    tesls = [l.rstrip('\n') for l in open(testlist)]
+    trnls = [l.rstrip('\n') for l in open(trainlist)][:num_train]
+    tesls = [l.rstrip('\n') for l in open(testlist)][:num_test]
+    print('To load {:d} train samples, {:d} test samples.'.format(len(trnls), len(tesls)))
 
     # Train
     train_feat = []
@@ -89,10 +90,10 @@ def dataloader(featdir, trainlist, testlist, timitinfo, tasks, batch=False, batc
     # Batch data
     if batch:
         # Convert to torch tensor
-        train_feat = torch.from_numpy(train_feat).float()
-        train_label = torch.from_numpy(train_label).long()
-        test_feat = torch.from_numpy(test_feat).float()
-        test_label = torch.from_numpy(test_label).long()
+        train_feat = torch.from_numpy(train_feat).float().view(-1, 1, 414, 450)
+        train_label = torch.from_numpy(train_label).float()
+        test_feat = torch.from_numpy(test_feat).float().view(-1, 1, 414, 450)
+        test_label = torch.from_numpy(test_label).float()
 
         train_data = TensorDataset(train_feat, train_label)
         train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)

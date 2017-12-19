@@ -2,8 +2,7 @@
 # encoding: utf-8
 
 import math
-import torch
-from torch.autograd import Variable, grad
+from collections import OrderedDict
 import torch.nn as nn
 import pdb
 
@@ -78,20 +77,29 @@ class _D(nn.Module):
     Discriminator.
 
     '''
-    def __init__(self):
+    def __init__(self, attri_dict):
+        '''
+        attri_dict: OrderedDict, {label name: {discrete: True or False, dimension: number of classes [int]}}
+        '''
         super(_D, self).__init__()
         # z 200*1*1
-        self.classifier = nn.Sequential(
+        self.attri_dict = attri_dict
+        self.projector = nn.Sequential(
             nn.Conv2d(200, 1000, 1, 1, 0),
             nn.LeakyReLU(0.2),
             nn.Conv2d(1000, 1000, 1, 1, 0),
-            nn.LeakyReLU(0.2),
-            nn.Conv2d(1000, 1, 1, 1, 0)
+            nn.LeakyReLU(0.2)
         )
+        self.classifiers = nn.ModuleList()
+        for k in self.attri_dict:
+            self.classifiers.append(nn.Linear(1000, self.attri_dict[k]['dimension']))
 
     def forward(self, x):
-        x = self.classifier(x)
-        return x.view(-1)
+        h = self.projector(x).view(-1, 1000)
+        ys = OrderedDict()
+        for i, k in enumerate(self.attri_dict):
+            ys[k] = self.classifiers[i](h)
+        return ys
 
 
 def weights_init(m):
