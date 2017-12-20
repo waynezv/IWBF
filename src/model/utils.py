@@ -29,9 +29,9 @@ def loss_func(yps, y, attri_dict):
     return losses
 
 
-def cal_test_err(loss_ds, yps, y, attri_dict):
+def cal_err(loss_ds, yps, y, attri_dict):
     '''
-    Compute test errors w.r.t. attri_dict.
+    Compute errors w.r.t. attri_dict.
 
     :loss_ds: OrderedDict, {label name: loss [TorchTensor]}
     :yps: OrderedDict, {label name: prediction (without softmax) [TorchTensor]}
@@ -91,7 +91,7 @@ class AverageMeter(object):
         self.val = val
         self.sum += val * n
         self.count += n
-        self.avg = self.sum / self.count
+        self.avg = self.sum / float(self.count)
 
 
 def create_save_folder(save_path, force=False, ignore_patterns=[]):

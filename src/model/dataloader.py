@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 import os
+import math
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -60,10 +61,35 @@ def dataloader(featdir, trainlist, testlist, timitinfo, tasks, num_train=None, n
     tesls = [l.rstrip('\n') for l in open(testlist)][:num_test]
     print('To load {:d} train samples, {:d} test samples.'.format(len(trnls), len(tesls)))
 
+    # Split data
+    totls = trnls + tesls
+    trnls_split = []
+    tesls_split = []
+    i = 0  # init outer pointer
+    while i < len(totls):
+        spkname = totls[i].split('/')[2]
+        cnt = 0  # counter for each speaker
+        j = i  # init lookup pointer
+        while totls[j].split('/')[2] == spkname:
+            cnt += 1
+            j += 1
+            if j >= len(totls):
+                break
+        cnt_l = math.floor(cnt * 0.8)
+        k = i
+        while k < i + cnt_l:
+            trnls_split.append(totls[k])
+            k += 1
+        while k < i + cnt:
+            tesls_split.append(totls[k])
+            k += 1
+        i = j  # fast forward outer pointer
+    print('Splitted to {:d} train samples, {:d} test samples.'.format(len(trnls_split), len(tesls_split)))
+
     # Train
     train_feat = []
     train_label = []
-    for l in tqdm(trnls, desc='load train', leave=True):
+    for l in tqdm(trnls_split, desc='load train', leave=True):
         spkname = l.split('/')[2][1:]
         for t in tasks:
             train_label.append(info_dict[spkname][t])
@@ -72,7 +98,7 @@ def dataloader(featdir, trainlist, testlist, timitinfo, tasks, num_train=None, n
     # Test
     test_feat = []
     test_label = []
-    for l in tqdm(tesls, desc='load test', leave=True):
+    for l in tqdm(tesls_split, desc='load test', leave=True):
         spkname = l.split('/')[2][1:]
         for t in tasks:
             test_label.append(info_dict[spkname][t])

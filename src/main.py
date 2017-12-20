@@ -24,8 +24,9 @@ from colorama import Fore
 
 from model.args import parser
 from model.dataloader import dataloader
-from model.model import _E, _G, _D, weights_init
-from model.utils import save_checkpoint, ScoreMeter, loss_func, cal_test_err
+# from model.model import _E, _G, _D, weights_init
+from model.small_model import _E, _G, _D, weights_init
+from model.utils import save_checkpoint, ScoreMeter, loss_func, cal_err
 
 # Parse args
 args = parser.parse_args()
@@ -186,7 +187,7 @@ for epoch in range(args.nepoch):
         optimizer_G.step()
         optimizer_D.step()
 
-        train_err = cal_test_err(loss_ds, yps, y, attri_dict)  # test errors
+        train_err = cal_err(loss_ds, yps, y, attri_dict)  # test errors
         for k in loss_ds:
             train_loss_ds[k] += loss_ds[k].data[0]
         for k in train_err:
@@ -243,7 +244,7 @@ for epoch in range(args.nepoch):
 
         yps = netD(z)
         loss_ds = loss_func(yps, y, attri_dict)  # test losses
-        test_err = cal_test_err(loss_ds, yps, y, attri_dict)  # test errors
+        test_err = cal_err(loss_ds, yps, y, attri_dict)  # test errors
         for k in loss_ds:
             test_loss_ds[k] += loss_ds[k].data[0]
         for k in test_err:
