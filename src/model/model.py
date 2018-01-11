@@ -88,7 +88,8 @@ class _D(nn.Module):
             nn.Conv2d(200, 1000, 1, 1, 0),
             nn.LeakyReLU(0.2),
             nn.Conv2d(1000, 1000, 1, 1, 0),
-            nn.LeakyReLU(0.2)
+            nn.LeakyReLU(0.2),
+            nn.Dropout(p=0.5)
         )
         self.classifiers = nn.ModuleList()
         for k in self.attri_dict:

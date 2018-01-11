@@ -10,21 +10,55 @@ from colorama import Fore
 import pdb
 
 
-def loss_func(yps, y, attri_dict):
+def taskwise_earlystop(train_losses_dict, test_losses_dict, loss_weight_dict, stride, threshold):
+    '''
+    Taskwise early stopping.
+
+    :train_losses_dict: OrderedDict, {task name: [list of train losses for each epoch]}
+    :test_losses_dict: OrderedDict, {task name: [list of test losses for each epoch]}
+    :loss_weight_dict: OrderedDict, {task name: weight [float]}
+    :stride: Int, window length
+    :threshold: Float, if exceed this threshold then stop task
+    <- criterion: OrderedDict, {task name: stop criterion value [Float]}
+    <- stop: OrderedDict, {task name: stop or not [Boolean]}
+    '''
+
+    criterion = OrderedDict()
+    stop = OrderedDict()
+    for k in train_losses_dict:
+        trnlk = train_losses_dict[k]
+        teslk = test_losses_dict[k]
+        criterion[k] = ((stride * np.median(trnlk[-stride:])) / np.abs(np.sum(trnlk[-stride:]) - stride * np.median(trnlk[-stride:]))) * \
+            (np.abs(teslk[-1] - np.min(trnlk)) / (loss_weight_dict[k] * np.min(trnlk)))
+        print(Fore.MAGENTA + k + Fore.RESET + ' {} '.format(criterion[k]), end='')
+        if criterion[k] > threshold:
+            stop[k] = True
+            print('stop' + Fore.GREEN + ' {} '.format(stop[k]) + Fore.RESET, end='')
+        else:
+            stop[k] = False
+            print('stop' + Fore.YELLOW + ' {} '.format(stop[k]) + Fore.RESET, end='')
+    print('')
+
+    return criterion, stop
+
+
+def loss_func(yps, y, attri_dict, loss_weight_dict):
     '''
     Compute losses w.r.t. attri_dict.
 
     :yps: OrderedDict, {label name: prediction (without softmax) [TorchTensor]}
     :y: TorchTensor, label
     :attri_dict: OrderedDict, {label name: {discrete: True or False, dimension: number of classes [int]}}
-    <- losses: OrderedDict, {label name: loss}
+    :loss_weight_dict: OrderedDict, {label name: weight [float]}
+    <- losses: OrderedDict, {label name: loss [TorchTensor]}
     '''
     losses = OrderedDict()
     for i, k in enumerate(attri_dict):
         if attri_dict[k]['discrete'] is True:  # discrete classes
-            losses[k] = torch.nn.functional.cross_entropy(yps[k], y[:, i].long())
+            losses[k] = torch.nn.functional.cross_entropy(yps[k], y[:, i].long()).mul(loss_weight_dict[k])
         else:  # continuous values
-            losses[k] = torch.nn.functional.mse_loss(yps[k], y[:, i])
+            # losses[k] = torch.nn.functional.mse_loss(yps[k], y[:, i]).mul(loss_weight_dict[k])
+            losses[k] = (yps[k] - y[:, i]).abs().mean().mul(loss_weight_dict[k])
 
     return losses
 

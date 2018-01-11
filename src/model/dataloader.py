@@ -35,7 +35,7 @@ def build_info_dict(raw_info_fn):
         birthdate = np.asarray(l[3].split('/'), dtype=np.float64)
         age = (birthdate[0] * 30 + birthdate[1]) / 365. + (86 - birthdate[2])  # age relative to 1986
         h = np.asarray(l[4].rstrip('"').split('\''), dtype=np.float64)
-        height = h[0] + h[1] / 12.  # 1 ft = 12 in
+        height = (h[0] + h[1] / 12.) * 30.48  # 1 ft = 12 in, 1 ft = 30.48 cm
         # race = l[5]
         # if race in race_dict:
             # raceid = race_dict[race]
@@ -105,13 +105,22 @@ def dataloader(featdir, trainlist, testlist, timitinfo, tasks, num_train=None, n
         test_feat.append(np.loadtxt(os.path.join(featdir, l), delimiter=','))
 
     train_feat = np.asarray(train_feat, dtype=np.float64)
-    train_label = np.asarray(train_label, dtype=np.float64).reshape((-1, len(tasks)))
     test_feat = np.asarray(test_feat, dtype=np.float64)
-    test_label = np.asarray(test_label, dtype=np.float64).reshape((-1, len(tasks)))
+    if len(tasks) == 0:  # just place-holder
+        train_label = np.zeros((train_feat.shape[0], 1), dtype=np.float64)
+        test_label = np.zeros((test_feat.shape[0], 1), dtype=np.float64)
+    else:
+        train_label = np.asarray(train_label, dtype=np.float64).reshape((-1, len(tasks)))
+        test_label = np.asarray(test_label, dtype=np.float64).reshape((-1, len(tasks)))
 
     # Normalize
-    # train_feat = (train_feat - train_feat.mean()) / (train_feat.std())
-    # test_feat = (test_feat - test_feat.mean()) / (test_feat.std())
+    train_feat = (train_feat - train_feat.mean()) / (train_feat.std())
+    test_feat = (test_feat - test_feat.mean()) / (test_feat.std())
+
+    train_label[:, 3] = (train_label[:, 3] - train_label[:, 3].mean())  # / (train_label[:, 3].std())
+    train_label[:, 4] = (train_label[:, 4] - train_label[:, 4].mean())  # / (train_label[:, 4].std())
+    test_label[:, 3] = (test_label[:, 3] - test_label[:, 3].mean())  # / (test_label[:, 3].std())
+    test_label[:, 4] = (test_label[:, 4] - test_label[:, 4].mean())  # / (test_label[:, 4].std())
 
     # Batch data
     if batch:
